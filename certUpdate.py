@@ -94,6 +94,12 @@ def prompt_with_timeout(days_remaining, timeout):
 # Step 3 — Request a new certificate from Let's Encrypt via certbot
 # ---------------------------------------------------------------------------
 def renew_certificate():
+    if not CERTBOT_CREDS.exists():
+        print(f"\nERROR: Azure credentials file not found: {CERTBOT_CREDS}")
+        print("Create this file with your Azure service principal details.")
+        print("See README.md for the required format.")
+        sys.exit(1)
+
     print("\nRequesting new certificate from Let's Encrypt...")
     print(f"  Domain:          {CERTBOT_DOMAIN}")
     print(f"  DNS TXT record:  _acme-challenge.{CERTBOT_DOMAIN}")
