@@ -24,14 +24,17 @@ ISE_PORT       = int(config["ise"]["port"])
 ISE_ADMIN_USER = config["ise"]["admin_user"]
 ISE_ADMIN_PASS = config["ise"]["admin_pass"]
 
-CERTBOT_CREDS  = config["certbot"]["credentials"]
-CERTBOT_CONFIG = config["certbot"]["config_dir"]
-CERTBOT_WORK   = config["certbot"]["work_dir"]
-CERTBOT_LOGS   = config["certbot"]["logs_dir"]
 CERTBOT_EMAIL  = config["certbot"]["email"]
 CERTBOT_DOMAIN = config["certbot"]["domain"]
 
-CERT_DIR  = Path(CERTBOT_CONFIG) / "live" / CERTBOT_DOMAIN
+# All paths are derived relative to the script's directory — no hardcoded paths
+SCRIPT_DIR     = Path(__file__).parent
+CERTBOT_CREDS  = SCRIPT_DIR / "certbot-azure.ini"
+CERTBOT_CONFIG = SCRIPT_DIR / "config"
+CERTBOT_WORK   = SCRIPT_DIR / "work"
+CERTBOT_LOGS   = SCRIPT_DIR / "logs"
+
+CERT_DIR  = CERTBOT_CONFIG / "live" / CERTBOT_DOMAIN
 FULLCHAIN = CERT_DIR / "fullchain.pem"
 PRIVKEY   = CERT_DIR / "privkey.pem"
 
