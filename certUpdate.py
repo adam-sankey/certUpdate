@@ -177,17 +177,17 @@ def apply_certificate_to_ise():
     # Assigning roles at import time can silently fail if a cert with the same
     # name or subject already exists. Separating import from role assignment
     # avoids this and gives us a reliable cert ID to work with.
-    cert_name = f"ise-sankey-io-{datetime.datetime.utcnow().strftime('%Y%m%d')}"
+    cert_name = f"ise-sankey-io-{datetime.datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
     print(f"  Importing certificate as '{cert_name}'...")
     import_payload = {
         "name":                              cert_name,
         "data":                              cert_data,
         "privateKeyData":                    key_data,
         "password":                          "",
-        "admin":                             False,
-        "eap":                               False,
-        "radius":                            False,
-        "portal":                            False,
+        "admin":                             CERT_ROLES["admin"],
+        "eap":                               CERT_ROLES["eap"],
+        "radius":                            CERT_ROLES["radius"],
+        "portal":                            CERT_ROLES["portal"],
         "portalGroupTag":                    "Default Portal Certificate Group",
         "pxgrid":                            False,
         "ims":                               False,
