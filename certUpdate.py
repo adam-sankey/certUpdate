@@ -251,9 +251,34 @@ def apply_certificate_to_ise():
 
 
 # ---------------------------------------------------------------------------
-# Step 5 — Verify the new certificate is active
+# Step 5 — Wait for ISE to restart, then verify the new certificate is active
 # ---------------------------------------------------------------------------
+def wait_for_ise(timeout=300, interval=15):
+    print(f"\nWaiting for ISE to restart (timeout: {timeout}s)...")
+    deadline = datetime.datetime.utcnow() + datetime.timedelta(seconds=timeout)
+    attempt = 0
+    while datetime.datetime.utcnow() < deadline:
+        attempt += 1
+        try:
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            with socket.create_connection((ISE_HOST, ISE_PORT), timeout=5) as sock:
+                with context.wrap_socket(sock, server_hostname=ISE_HOST):
+                    pass
+            print(f"  ISE is back online.")
+            return True
+        except Exception:
+            elapsed = (datetime.datetime.utcnow() - (deadline - datetime.timedelta(seconds=timeout))).seconds
+            print(f"  ISE not responding yet... ({elapsed}s elapsed, retrying in {interval}s)")
+            import time
+            time.sleep(interval)
+    print(f"  WARNING: ISE did not come back within {timeout} seconds — verify manually.")
+    return False
+
+
 def verify_new_certificate():
+    wait_for_ise()
     print("\nVerifying new certificate on ISE...")
     expiry_date, days_remaining = get_cert_expiry(ISE_HOST, ISE_PORT)
     print(f"New certificate expires: {expiry_date.strftime('%Y-%m-%d')} ({days_remaining} days remaining)")
