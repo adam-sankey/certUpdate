@@ -5,6 +5,7 @@ import requests
 import sys
 import select
 import datetime
+import argparse
 import configparser
 from pathlib import Path
 
@@ -291,7 +292,7 @@ def verify_new_certificate():
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-def main():
+def main(skip_certbot=False):
     print("=" * 60)
     print("ISE Certificate Manager")
     print("=" * 60)
@@ -300,19 +301,25 @@ def main():
     expiry_date, days_remaining = get_cert_expiry(ISE_HOST, ISE_PORT)
     print(f"Current certificate expires: {expiry_date.strftime('%Y-%m-%d')} ({days_remaining} days remaining)")
 
-    # Decide whether to proceed
-    if days_remaining <= EXPIRY_THRESHOLD:
-        print(f"\nCertificate expires in {days_remaining} days — automatically renewing.")
-        proceed = True
+    if skip_certbot:
+        if not CERT.exists():
+            print(f"\nERROR: --skip-certbot specified but no cert found at {CERT}")
+            sys.exit(1)
+        print(f"\nSkipping Let's Encrypt renewal — using existing cert at {CERT}")
     else:
-        proceed = prompt_with_timeout(days_remaining, PROMPT_TIMEOUT)
+        # Decide whether to proceed with renewal
+        if days_remaining <= EXPIRY_THRESHOLD:
+            print(f"\nCertificate expires in {days_remaining} days — automatically renewing.")
+            proceed = True
+        else:
+            proceed = prompt_with_timeout(days_remaining, PROMPT_TIMEOUT)
 
-    if not proceed:
-        print("Exiting without renewing certificate.")
-        sys.exit(0)
+        if not proceed:
+            print("Exiting without renewing certificate.")
+            sys.exit(0)
 
-    # Renew and apply
-    renew_certificate()
+        renew_certificate()
+
     apply_certificate_to_ise()
     verify_new_certificate()
 
@@ -320,7 +327,16 @@ def main():
 
 
 if __name__ == "__main__":
-    # Suppress SSL warnings for ISE self-signed cert
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    main()
+
+    parser = argparse.ArgumentParser(description="ISE Certificate Manager")
+    parser.add_argument(
+        "--skip-certbot",
+        action="store_true",
+        help="Skip Let's Encrypt renewal and import the existing cert from disk directly. "
+             "Useful when the rate limit has been hit but a valid cert already exists locally."
+    )
+    args = parser.parse_args()
+
+    main(skip_certbot=args.skip_certbot)
