@@ -153,10 +153,10 @@ def renew_certificate():
 # Step 4 — Apply the certificate to ISE via OpenAPI
 # ---------------------------------------------------------------------------
 def format_pem(path):
-    # ISE requires PEM content with literal \n between each line (not actual newlines)
-    # Matches the awk command: awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}'
+    # ISE API requires actual newlines between PEM lines (JSON \n escape sequences).
+    # Using literal backslash+n causes ISE to silently reject the import.
     lines = path.read_text().splitlines()
-    return "\\n".join(line for line in lines if line.strip())
+    return "\n".join(line for line in lines if line.strip())
 
 
 def apply_certificate_to_ise():
@@ -236,8 +236,10 @@ def apply_certificate_to_ise():
         "allowReplacementOfPortalGroupTag":  True,
     }
 
+    # ISE uses the short hostname (node name) in the cert API path, not the FQDN
+    ise_node = ISE_HOST.split(".")[0]
     put_response = requests.put(
-        f"{base_url}/api/v1/certs/system-certificate/{ISE_HOST}/{cert_id}",
+        f"{base_url}/api/v1/certs/system-certificate/{ise_node}/{cert_id}",
         auth=auth, headers=headers, json=put_payload, verify=False
     )
 
