@@ -35,7 +35,7 @@ CERTBOT_WORK   = SCRIPT_DIR / "work"
 CERTBOT_LOGS   = SCRIPT_DIR / "logs"
 
 CERT_DIR  = CERTBOT_CONFIG / "live" / CERTBOT_DOMAIN
-FULLCHAIN = CERT_DIR / "fullchain.pem"
+CERT      = CERT_DIR / "cert.pem"       # leaf cert only — required by ISE import API
 PRIVKEY   = CERT_DIR / "privkey.pem"
 
 EXPIRY_THRESHOLD = 15   # days — auto-renew if fewer than this many days remain
@@ -167,7 +167,7 @@ def apply_certificate_to_ise():
 
     # Read and format cert and key files
     try:
-        cert_data = format_pem(FULLCHAIN)
+        cert_data = format_pem(CERT)
         key_data = format_pem(PRIVKEY)
     except Exception as e:
         print(f"ERROR: Could not read certificate files — {e}")
@@ -214,7 +214,7 @@ def apply_certificate_to_ise():
 
     cert_id = response.json().get("response", {}).get("id")
     if not cert_id:
-        print(f"ERROR: Import succeeded but no cert ID returned. Response: {response.text}")
+        print(f"ERROR: Import returned HTTP {response.status_code} but no cert ID. Response: {response.text}")
         sys.exit(1)
     print(f"  Certificate imported. ID: {cert_id}")
 
