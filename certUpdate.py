@@ -213,42 +213,15 @@ def apply_certificate_to_ise():
         print(f"ERROR: Certificate import failed ({response.status_code}): {response.text}")
         sys.exit(1)
 
-    cert_id = response.json().get("response", {}).get("id")
+    result = response.json().get("response", {})
+    cert_id = result.get("id")
+    message = result.get("message", "")
+
     if not cert_id:
         print(f"ERROR: Import returned HTTP {response.status_code} but no cert ID. Response: {response.text}")
         sys.exit(1)
-    print(f"  Certificate imported. ID: {cert_id}")
 
-    # Step 2: Assign roles to the new cert via PUT using the cert ID.
-    # This explicitly binds the new cert to all configured ISE services,
-    # transferring roles away from whichever cert previously held them.
-    print("  Assigning roles to new certificate...")
-    put_payload = {
-        "name":                              cert_name,
-        "admin":                             CERT_ROLES["admin"],
-        "eap":                               CERT_ROLES["eap"],
-        "radius":                            CERT_ROLES["radius"],
-        "portal":                            CERT_ROLES["portal"],
-        "portalGroupTag":                    "Default Portal Certificate Group",
-        "allowRoleTransferForSameSubject":   True,
-        "allowPortalTagTransferForSameSubject": True,
-        "allowReplacementOfCertificates":    True,
-        "allowReplacementOfPortalGroupTag":  True,
-    }
-
-    # ISE uses the short hostname (node name) in the cert API path, not the FQDN
-    ise_node = ISE_HOST.split(".")[0]
-    put_response = requests.put(
-        f"{base_url}/api/v1/certs/system-certificate/{ise_node}/{cert_id}",
-        auth=auth, headers=headers, json=put_payload, verify=False
-    )
-
-    if put_response.status_code not in (200, 201):
-        print(f"ERROR: Role assignment failed ({put_response.status_code}): {put_response.text}")
-        sys.exit(1)
-
-    message = put_response.json().get("response", {}).get("message", "")
-    print(f"  Roles assigned successfully.")
+    print(f"  Certificate imported successfully. ID: {cert_id}")
     if message:
         print(f"  ISE message: {message}")
 
